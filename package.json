@@ -1,0 +1,86 @@
+{
+  "name": "mcp-otel",
+  "version": "0.1.0",
+  "description": "W3C Trace Context bridge for the Model Context Protocol — propagate traces through MCP _meta and emit OpenTelemetry spans so Host -> MCP server -> tool -> downstream shows up as one trace.",
+  "type": "module",
+  "license": "MIT",
+  "author": "StudioMeyer",
+  "homepage": "https://github.com/studiomeyer-io/mcp-otel#readme",
+  "bugs": {
+    "url": "https://github.com/studiomeyer-io/mcp-otel/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "github:studiomeyer-io/mcp-otel"
+  },
+  "keywords": [
+    "mcp",
+    "opentelemetry",
+    "tracing",
+    "observability",
+    "w3c-trace-context",
+    "model-context-protocol",
+    "distributed-tracing",
+    "traceparent",
+    "genai"
+  ],
+  "sideEffects": false,
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "SECURITY.md"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "typecheck": "tsc --noEmit",
+    "lint": "tsc --noEmit",
+    "clean": "rm -rf dist coverage",
+    "prepublishOnly": "npm run clean && npm run build && npm run test && npm run typecheck"
+  },
+  "dependencies": {
+    "@opentelemetry/core": "^2.0.0"
+  },
+  "peerDependencies": {
+    "@modelcontextprotocol/sdk": ">=1.10.0 <2",
+    "@opentelemetry/api": "^1.9.0"
+  },
+  "peerDependenciesMeta": {
+    "@modelcontextprotocol/sdk": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "@opentelemetry/api": "^1.9.0",
+    "@opentelemetry/context-async-hooks": "^2.8.0",
+    "@opentelemetry/sdk-trace-base": "^2.0.0",
+    "@types/node": "^20.14.0",
+    "@vitest/coverage-v8": "^4.0.0",
+    "tsup": "^8.5.0",
+    "typescript": "^5.5.0",
+    "vitest": "^4.0.0"
+  }
+}
