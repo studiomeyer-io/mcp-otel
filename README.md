@@ -186,6 +186,16 @@ So `_meta` is the only place that is both per-request and transport-independent 
 - It does not auto-instrument the transport or patch the SDK globally; you opt in per tool handler (or call the helpers yourself).
 - It does not invent metrics or logs — spans only, per SEP-2577's OTel direction.
 
+## Part of the StudioMeyer MCP toolkit
+
+A small family of focused, production-grade tools for building and operating MCP servers — mix and match:
+
+- [mcp-armor](https://github.com/studiomeyer-io/mcp-armor) — runtime defense sidecar: scans tool calls, verifies signed manifests, blocks known-bad CVEs
+- [mcp-gauntlet](https://github.com/studiomeyer-io/mcp-gauntlet) — pre-deploy `mcp-fuzz` (schema-aware fuzzer) + `mcp-storm` (load tester)
+- **mcp-otel** *(this one)* — W3C Trace Context → OpenTelemetry bridge
+- [mcp-cache-kit](https://github.com/studiomeyer-io/mcp-cache-kit) — leak-safe SEP-2549 caching (`ttlMs` + `cacheScope`)
+- [skilldoctor](https://github.com/studiomeyer-io/skilldoctor) — linter + security scanner for agent skill files
+
 ## License
 
 MIT © StudioMeyer
