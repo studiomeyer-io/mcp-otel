@@ -1,10 +1,14 @@
+<!-- studiomeyer-mcp-stack-banner:start -->
+> **Part of the [StudioMeyer MCP Stack](https://studiomeyer.io)** — Built in Mallorca 🌴 · ⭐ if you use it
+<!-- studiomeyer-mcp-stack-banner:end -->
+
 # mcp-otel
 
 W3C Trace Context bridge for the **Model Context Protocol**. It propagates trace context through MCP's `_meta` field and emits OpenTelemetry spans, so a request flowing **Host → MCP server → tool → downstream HTTP** shows up as **one connected trace** in Jaeger, Tempo, Honeycomb, or Datadog.
 
-<!-- badges: replace OWNER once published -->
 [![npm](https://img.shields.io/npm/v/mcp-otel.svg)](https://www.npmjs.com/package/mcp-otel)
 [![CI](https://github.com/studiomeyer-io/mcp-otel/actions/workflows/ci.yml/badge.svg)](https://github.com/studiomeyer-io/mcp-otel/actions/workflows/ci.yml)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/studiomeyer-io/mcp-otel/badge)](https://scorecard.dev/viewer/?uri=github.com/studiomeyer-io/mcp-otel)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 
 ---
