@@ -104,6 +104,33 @@ describe("formatTraceparent", () => {
       traceFlags: TraceFlags.SAMPLED,
     });
   });
+
+  it("returns null for a null / undefined span context", () => {
+    // @ts-expect-error deliberately passing null at runtime
+    expect(formatTraceparent(null)).toBeNull();
+    // @ts-expect-error deliberately passing undefined at runtime
+    expect(formatTraceparent(undefined)).toBeNull();
+  });
+
+  it("returns null for a malformed (short) span id", () => {
+    expect(
+      formatTraceparent({
+        traceId: SAMPLE_TRACE_ID,
+        spanId: "abc",
+        traceFlags: TraceFlags.SAMPLED,
+      }),
+    ).toBeNull();
+  });
+
+  it("defaults a missing traceFlags to NONE (emits 00)", () => {
+    // A span context with no traceFlags must hit the `?? TraceFlags.NONE`
+    // fallback rather than emitting `undefined`.
+    const partial = { traceId: SAMPLE_TRACE_ID, spanId: SAMPLE_SPAN_ID };
+    const out = formatTraceparent(
+      partial as unknown as Parameters<typeof formatTraceparent>[0],
+    );
+    expect(out).toBe(`00-${SAMPLE_TRACE_ID}-${SAMPLE_SPAN_ID}-00`);
+  });
 });
 
 describe("extractTraceContext", () => {
@@ -140,6 +167,26 @@ describe("extractTraceContext", () => {
     const bag = propagation.getBaggage(ctx);
     expect(bag?.getEntry("tenant")?.value).toBe("acme");
     expect(bag?.getEntry("region")?.value).toBe("eu");
+  });
+
+  it("carries tracestate through into the extracted span context", () => {
+    const ctx = extractTraceContext({
+      [TRACEPARENT_META_KEY]: SAMPLE_TRACEPARENT,
+      [TRACESTATE_META_KEY]: "vendora=t61rcWkgMzE,vendorb=00f067aa0ba902b7",
+    });
+    const sc = trace.getSpanContext(ctx);
+    expect(sc?.traceId).toBe(SAMPLE_TRACE_ID);
+    expect(sc?.traceState?.get("vendora")).toBe("t61rcWkgMzE");
+  });
+
+  it("ignores a non-string tracestate value", () => {
+    const ctx = extractTraceContext({
+      [TRACEPARENT_META_KEY]: SAMPLE_TRACEPARENT,
+      [TRACESTATE_META_KEY]: 42 as unknown as string,
+    });
+    // traceparent still extracts; the bad tracestate is simply dropped.
+    expect(trace.getSpanContext(ctx)?.traceId).toBe(SAMPLE_TRACE_ID);
+    expect(trace.getSpanContext(ctx)?.traceState).toBeUndefined();
   });
 });
 
@@ -186,6 +233,16 @@ describe("injectTraceContext", () => {
     const sc = trace.getSpanContext(extractTraceContext(meta));
     expect(sc?.traceId).toBe(SAMPLE_TRACE_ID);
     expect(sc?.spanId).toBe(SAMPLE_SPAN_ID);
+  });
+
+  it("falls back to the active context when none is passed", () => {
+    // No context arg -> the `context ?? otelContext.active()` default runs.
+    // With no context manager registered, active() is ROOT (no span), so
+    // nothing is written — the point is that the default path is exercised
+    // and returns cleanly rather than throwing.
+    const meta = injectTraceContext({});
+    expect(meta[TRACEPARENT_META_KEY]).toBeUndefined();
+    expect(meta).toBeTypeOf("object");
   });
 });
 

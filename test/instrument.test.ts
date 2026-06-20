@@ -128,6 +128,28 @@ describe("runInToolSpan — end to end", () => {
     );
   });
 
+  it("wraps a non-Error throw into an Error on the span", async () => {
+    const meta = { [TRACEPARENT_META_KEY]: SAMPLE_TRACEPARENT };
+
+    // A thrown string -> re-thrown as-is, but the span message preserves it.
+    await expect(
+      runInToolSpan(meta, { toolName: "str.tool", tracer: h.tracer }, () => {
+        throw "plain string failure";
+      }),
+    ).rejects.toBe("plain string failure");
+    expect(h.spans()[0]!.status.code).toBe(SpanStatusCode.ERROR);
+    expect(h.spans()[0]!.status.message).toBe("plain string failure");
+
+    // A thrown non-string, non-Error -> generic "Unknown error" message.
+    await expect(
+      runInToolSpan(meta, { toolName: "obj.tool", tracer: h.tracer }, () => {
+        throw { code: 500 };
+      }),
+    ).rejects.toEqual({ code: 500 });
+    expect(h.spans()[1]!.status.code).toBe(SpanStatusCode.ERROR);
+    expect(h.spans()[1]!.status.message).toBe("Unknown error");
+  });
+
   it("attaches a session id when provided", async () => {
     await runInToolSpan(
       { [TRACEPARENT_META_KEY]: SAMPLE_TRACEPARENT },
