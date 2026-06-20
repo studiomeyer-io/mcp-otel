@@ -26,11 +26,14 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Typecheck
-        run: npm run typecheck
-
+      # Build first: examples/ self-import "mcp-otel", which resolves via the
+      # package's own exports -> dist/. Typechecking before the build fails in a
+      # clean clone (no dist/ yet). prepublishOnly already builds before typecheck.
       - name: Build
         run: npm run build
+
+      - name: Typecheck
+        run: npm run typecheck
 
       - name: Test
         run: npm test
