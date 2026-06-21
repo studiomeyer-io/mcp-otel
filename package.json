@@ -1,6 +1,6 @@
 {
   "name": "mcp-otel",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "W3C Trace Context bridge for the Model Context Protocol — propagate traces through MCP _meta and emit OpenTelemetry spans so Host -> MCP server -> tool -> downstream shows up as one trace.",
   "type": "module",
   "license": "MIT",
