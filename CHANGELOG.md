@@ -6,6 +6,33 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- `parseTraceparent` now follows the W3C Trace Context forward-compatibility
+  rule. A `traceparent` with a *higher* version than `00` (e.g. `01-…`) and
+  extra trailing fields is parsed by reading its first four fields and ignoring
+  the rest, as long as it is at least 55 characters long. Previously the parser
+  hard-required exactly four dash-separated segments and so returned `null` for
+  every future-version header — diverging from both the spec and the
+  `@opentelemetry/core` propagator that `extractTraceContext` delegates to.
+  Version `00` stays length-strict (exactly four fields, no trailing data), and
+  `ff`, all-zero trace-id / parent-id, wrong length, and non-hex values are
+  still rejected.
+
+### Changed
+
+- Bumped pinned GitHub Actions in CI/publish/scorecard workflows
+  (`actions/checkout` v4 → v7, `actions/setup-node` v4 → v6,
+  `github/codeql-action/upload-sarif` v3 → v4, `actions/upload-artifact`
+  v4 → v7). Supersedes Dependabot #1.
+
+### Tested
+
+- Added forward-compatibility, cross-entry-point agreement
+  (`parseTraceparent` vs `extractTraceContext`), malformed-input safety,
+  and `tracestate` limit coverage. Test count 48 → 96; line/branch/function
+  coverage at 100%.
+
 ## [0.1.0] - 2026-06-20
 
 Initial release.
