@@ -165,7 +165,7 @@ The real-SDK wiring is in [`examples/mcp-server.ts`](./examples/mcp-server.ts).
 
 - **`extractTraceContext(meta, base?)`** → `Context`. Builds an OTel parent context from `_meta` (`traceparent` + `tracestate` + `baggage`). Defaults `base` to `ROOT_CONTEXT` for deterministic behavior.
 - **`injectTraceContext(meta, context?)`** → `Meta`. Writes trace keys into `_meta` from `context` (default: active context). Mutates and returns `meta`.
-- **`parseTraceparent(s)`** → `SpanContext | null`. Strict W3C parse; returns `null` for malformed, `ff`-version, or all-zero values. Result is `isRemote: true`.
+- **`parseTraceparent(s)`** → `SpanContext | null`. W3C-conformant parse. Version `00` is length-strict (exactly four fields); a *higher* version is parsed forward-compatibly (first four fields read, trailing fields ignored, per the spec) so it keeps working as Trace Context evolves. Returns `null` for malformed, `ff`-version, or all-zero (invalid trace-id / parent-id) values. Result is `isRemote: true`.
 - **`formatTraceparent(spanContext)`** → `string | null`. Serializes to a version-`00` `traceparent`; `null` for an invalid span context.
 - **`spanContextToContext(spanContext, base?)`** → `Context`. Wrap a span context you already hold into a context for injection.
 - **`traceContextFields()`** → `string[]`. The `_meta` keys this library reads/writes (useful for stripping them before forwarding `_meta`).

@@ -24,10 +24,20 @@ import type { Meta } from "./types.js";
 const INVALID_TRACE_ID = "00000000000000000000000000000000";
 const INVALID_SPAN_ID = "0000000000000000";
 const VERSION_FORBIDDEN = "ff";
+const VERSION_CURRENT = "00";
 
 const HEX32 = /^[0-9a-f]{32}$/;
 const HEX16 = /^[0-9a-f]{16}$/;
 const HEX2 = /^[0-9a-f]{2}$/;
+
+// Length of a well-formed version-00 traceparent:
+//   2 (version) + 1 + 32 (trace-id) + 1 + 16 (parent-id) + 1 + 2 (flags) = 55.
+// The W3C spec reuses this exact threshold to gate forward-compatible parsing
+// of *higher* versions: "if a higher version is detected … attempt to parse
+// trace-id, parent-id and the sampled bit from the flags if the header is at
+// least 55 characters long". See spec/20-http_request_header_format.md
+// ("Versioning of traceparent") and spec/30-processing-model.md.
+const MIN_TRACEPARENT_LENGTH = 55;
 
 /**
  * A single propagator instance that handles both `traceparent`/`tracestate`
@@ -41,18 +51,27 @@ const propagator = new CompositePropagator({
 /**
  * Parse a W3C `traceparent` string into a {@link SpanContext}.
  *
- * Format: `version "-" trace-id "-" parent-id "-" trace-flags`, e.g.
- * `00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01`.
+ * Format (version `00`): `version "-" trace-id "-" parent-id "-" trace-flags`,
+ * e.g. `00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01`.
+ *
+ * Forward compatibility: per the W3C Trace Context spec, a *higher* version
+ * (anything other than `00`, except the forbidden `ff`) is parsed leniently —
+ * the first four fields are read and any trailing fields are ignored, provided
+ * the header is at least 55 characters long. Version `00` is parsed strictly:
+ * exactly four fields, no trailing data. This matches the behaviour of the
+ * `@opentelemetry/core` W3C propagator that {@link extractTraceContext} uses
+ * internally, so the two entry points never disagree on the same input.
  *
  * Returns `null` for any malformed, forbidden (`ff` version) or all-zero
- * (invalid) value, following the W3C spec. The returned span context is always
- * marked `isRemote: true`.
+ * (invalid trace-id / parent-id) value, following the W3C spec. The returned
+ * span context is always marked `isRemote: true`.
  */
 export function parseTraceparent(traceparent: string): SpanContext | null {
   if (typeof traceparent !== "string") return null;
 
   const parts = traceparent.split("-");
-  if (parts.length !== 4) return null;
+  // Need at minimum version + trace-id + parent-id + flags.
+  if (parts.length < 4) return null;
 
   const [version, traceId, spanId, flags] = parts as [
     string,
@@ -61,21 +80,33 @@ export function parseTraceparent(traceparent: string): SpanContext | null {
     string,
   ];
 
-  // version: exactly 2 lowercase hex; "ff" is explicitly forbidden by the spec.
+  // version: exactly 2 lowercase hex; "ff" (255) is explicitly forbidden.
   if (!HEX2.test(version) || version === VERSION_FORBIDDEN) return null;
+
+  if (version === VERSION_CURRENT) {
+    // Version 00 is fully specified: exactly four fields, no trailing data.
+    if (parts.length !== 4) return null;
+  } else {
+    // Higher (future) version: the spec says to attempt a forward-compatible
+    // parse of the first four fields only when the header is long enough.
+    // Extra trailing fields are allowed and ignored.
+    if (traceparent.length < MIN_TRACEPARENT_LENGTH) return null;
+  }
 
   if (!HEX32.test(traceId) || traceId === INVALID_TRACE_ID) return null;
   if (!HEX16.test(spanId) || spanId === INVALID_SPAN_ID) return null;
   if (!HEX2.test(flags)) return null;
 
+  // `flags` is already validated as two hex chars, so parseInt never returns
+  // NaN here; the radix-16 parse is kept explicit for clarity.
   const traceFlags = parseInt(flags, 16);
-  if (Number.isNaN(traceFlags)) return null;
 
   return {
     traceId,
     spanId,
     // Only the lowest bit (sampled) is defined today; mask off the rest so an
-    // unknown future flag can't accidentally flip sampling semantics.
+    // unknown future flag can't accidentally flip sampling semantics. For a
+    // higher version this is also the only flag bit the spec lets us trust.
     traceFlags: traceFlags & TraceFlags.SAMPLED,
     isRemote: true,
   };
@@ -113,6 +144,9 @@ export function formatTraceparent(spanContext: SpanContext): string | null {
  * returns a context with the remote span + baggage attached. If `_meta` carries
  * no valid trace context, the returned context equals the (passed or root) base
  * context, so it is always safe to start a span against it.
+ *
+ * Malformed input never throws: a broken `traceparent` simply yields a context
+ * with no remote span, so the caller transparently starts a fresh root trace.
  *
  * @param meta  The `_meta` object from `request.params._meta` (may be undefined).
  * @param base  Base context to extract into. Defaults to `ROOT_CONTEXT` so the
