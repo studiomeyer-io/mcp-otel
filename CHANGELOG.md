@@ -6,6 +6,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+
+### Dependency maintenance
+
+- Refresh locked transitive dependencies within the existing manifest ranges. Build before typecheck because package self-imports in examples resolve generated declarations.
+- The checked install/build/typecheck and 96 tests pass. All-dependency and production audits report zero findings.
+
 ### Fixed
 
 - `parseTraceparent` now follows the W3C Trace Context forward-compatibility
