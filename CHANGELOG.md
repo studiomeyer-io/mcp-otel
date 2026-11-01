@@ -11,6 +11,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Refresh locked transitive dependencies within the existing manifest ranges. Build before typecheck because package self-imports in examples resolve generated declarations.
 - The checked install/build/typecheck and 96 tests pass. All-dependency and production audits report zero findings.
+- Retain OpenTelemetry API 1.9.1 with the supported 2.x tracing packages. The proposed 1.10.0 lock update conflicts with their declared peer range below 1.10.0 and fails a clean install; no peer checks are bypassed.
 
 ### Fixed
 

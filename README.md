@@ -186,6 +186,8 @@ So `_meta` is the only place that is both per-request and transport-independent 
 
 ## What it does not do
 
+The current OpenTelemetry 2.x tracing dependency tree requires `@opentelemetry/api <1.10.0`. Keep API 1.9.x with that tree; upgrading the API alone to 1.10.0 fails a clean installation. A migration to a matching newer tracing SDK is a separate dependency change.
+
 - It does not initialize OpenTelemetry, choose an exporter, or set a sampler — that's your app's job, and keeping it out means no version lock-in on the SDK side.
 - It does not auto-instrument the transport or patch the SDK globally; you opt in per tool handler (or call the helpers yourself).
 - It does not invent metrics or logs — spans only, per SEP-2577's OTel direction.
